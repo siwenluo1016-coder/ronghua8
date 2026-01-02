@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片展示页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #f0e6d2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .image-container {
+            position: relative;
+            width: 640px;
+            height: 1030px;
+            overflow: hidden;
+        }
+        
+        #bg-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            z-index: 1;
+        }
+        
+        /* 音乐图标样式 */
+        #music-icon {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            width: 50px;
+            height: auto;
+            cursor: pointer;
+            z-index: 10; /* 确保在所有元素最上层 */
+            transition: transform 0.2s ease;
+            animation: fadeIn 2s ease forwards;
+            animation-delay: 1s;
+            opacity: 0;
+        }
+        
+        #music-icon:hover {
+            transform: scale(1.05);
+        }
+        
+        /* 淡入动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .show-image {
+            position: absolute;
+            z-index: 2;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+        
+        #kuang-img {
+            top: 60%;
+            left: 0%;
+            width: 100%;
+            height: 30%;
+        }
+        
+        #hehua-img {
+            top: 25%;
+            left: 15%;
+            width: 70%;
+            height: 48%;
+        }
+        
+        #next-img {
+            top: 83%;
+            left: 67%;
+            width: 25%;
+            height: 20%;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        #next-img:hover {
+            transform: scale(1.05);
+        }
+        
+        #zi-img {
+            top: 65%;
+            left: 26%;
+            width: 52%;
+            height: 30%;
+        }
+        
+        #touming-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 3;
+            object-fit: cover;
+            display: none;
+        }
+        
+        .overlay-image {
+            position: absolute;
+            z-index: 4;
+            object-fit: contain;
+            display: none;
+        }
+        
+        #jingling-overlay {
+            top: 5%;
+            left: 27%;
+            width: 40%;
+            height: 45%;
+        }
+        
+        #dankuang-overlay {
+            top: 60%;
+            left: 5%;
+            width: 90%;
+            height: 30%;
+        }
+        
+        #baisezi-overlay {
+            top: 43%;
+            left: 19%;
+            width: 60%;
+            height: 25%;
+        }
+        
+        #next-overlay {
+            top: 85%;
+            left: 67%;
+            width: 25%;
+            height: 15%;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        #next-overlay:hover {
+            transform: scale(1.05);
+        }
+        
+        #text-input-container {
+            position: absolute;
+            top: 60%;
+            left: 5%;
+            width: 90%;
+            height: 30%;
+            z-index: 5;
+            display: none;
+        }
+        
+        #text-input {
+            position: absolute;
+            top: 40%;
+            left: 10%;
+            width: 80%;
+            height: 60%;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 24px;
+            font-family: 'LiSu', 'STKaiti', 'SimSun', serif;
+            color: #5C4033;
+            text-align: center;
+            resize: none;
+            padding: 10px;
+            line-height: 1;
+        }
+        
+        #text-input::placeholder {
+            color: #999;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="image-container">
+        <img id="bg-image" src="dabeijing.jpg" alt="大背景图">
+        <!-- 添加音乐图标 -->
+        <img id="music-icon" src="music1.png" alt="音乐图标">
+        <img id="kuang-img" class="show-image" src="kuang.png" alt="框图片">
+        <img id="zi-img" class="show-image" src="zi.png" alt="字图片">
+        <img id="hehua-img" class="show-image" src="hehua-hzh.png" alt="荷花图片">
+        <img id="next-img" class="show-image" src="next.png" alt="下一张图片">
+        
+        <img id="touming-img" src="touming.png" alt="透明覆盖图片">
+        
+        <img id="jingling-overlay" class="overlay-image" src="jingling.png" alt="精灵图片">
+        <img id="dankuang-overlay" class="overlay-image" src="dankuang.png" alt="单框图片">
+        <img id="baisezi-overlay" class="overlay-image" src="baisezi.png" alt="白字图片">
+        <img id="next-overlay" class="overlay-image" src="next.png" alt="下一步图片">
+        
+        <div id="text-input-container">
+            <textarea id="text-input" placeholder="在这里输入您的文字..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        // ====================== 核心：音乐控制逻辑 ======================
+        // 1. 创建音频对象（复用缓存）
+        let audio = new Audio('music.mp3');
+        audio.loop = true;
+        audio.volume = 0.8;
+        
+        // 读取前一个页面传递的状态（无则默认暂停）
+        let audioState = JSON.parse(localStorage.getItem('audioState') || '{"isPlaying":false,"icon":"music1.png","currentTime":0}');
+        
+        // 2. DOM加载完成立即续播
+        document.addEventListener('DOMContentLoaded', function() {
+            // 恢复从前一个页面带来的进度
+            if (audioState.currentTime) {
+                audio.currentTime = audioState.currentTime;
+            }
+            // 自动续播（减少停顿）
+            if (audioState.isPlaying) {
+                setTimeout(() => {
+                    audio.play().catch(err => {
+                        // 浏览器禁止自动播放时，点击后直接切换
+                        console.log('需点击图标播放音乐');
+                    });
+                }, 0);
+            }
+            // 同步图标（和前一个页面保持一致）
+            const musicIcon = document.getElementById('music-icon');
+            if (musicIcon) {
+                musicIcon.src = audioState.icon;
+                musicIcon.style.animation = 'fadeIn 2s ease forwards';
+                musicIcon.style.animationDelay = '1s';
+            }
+        });
+
+        // 3. 点击一次即切换图标+控制音乐
+        const musicIcon = document.getElementById('music-icon');
+        if (musicIcon) {
+            musicIcon.addEventListener('click', function(e) {
+                e.stopPropagation();
+                
+                if (audio.paused) {
+                    // 暂停状态 → 播放 + 切换为music.png
+                    audio.play();
+                    this.src = 'music.png';
+                    audioState.isPlaying = true;
+                    console.log('播放音乐，图标切换为music.png，进度：', audio.currentTime.toFixed(2), '秒');
+                } else {
+                    // 播放状态 → 暂停 + 切换为music1.png
+                    audio.pause();
+                    this.src = 'music1.png';
+                    audioState.isPlaying = false;
+                    console.log('暂停音乐，图标切换为music1.png，进度：', audio.currentTime.toFixed(2), '秒');
+                }
+                
+                // 保存最新状态（供后续跳转/返回使用）
+                audioState.currentTime = audio.currentTime;
+                audioState.icon = this.src;
+                localStorage.setItem('audioState', JSON.stringify(audioState));
+            });
+        }
+
+        // ========== 页面原有功能代码 ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            // ========== 第一步：从URL参数读取图片和区域信息 ==========
+            const urlParams = new URLSearchParams(window.location.search);
+            const flowerImage = urlParams.get('flower') || "zfz1.jpg"; // 从index6传来的烫花图片
+            const areaType = parseInt(urlParams.get('area')) || 1; // 区域类型：1=梅花，2=荷花
+            
+            console.log('🌺 接收到的URL参数:', { 
+                flowerImage: flowerImage, 
+                areaType: areaType 
+            });
+            
+            // ========== 第二步：图片映射配置（修改版） ==========
+            const flowerMapping = {
+                // area=2: 荷花映射（对应区域2）
+                "2": {
+                    "fhf1.jpg": "hehua-fhf.png",
+                    "fzf1.jpg": "hehua-fzf.png",
+                    "hfh1.jpg": "hehua-hfh.png",
+                    "hzh1.jpg": "hehua-hzh.png",
+                    "zfz1.jpg": "hehua-zfz.png",
+                    "zhz1.jpg": "hehua-zhz.png"
+                },
+                // area=3: 梅花映射（对应区域3）
+                "3": {
+                    "fhf1.jpg": "meihua-fhf.png",
+                    "fzf1.jpg": "meihua-fzf.png", 
+                    "hfh1.jpg": "meihua-hfh.png",
+                    "hzh1.jpg": "meihua-hzh.png",
+                    "zfz1.jpg": "meihua-zfz.png",
+                    "zhz1.jpg": "meihua-zhz.png"
+                }
+            };
+            
+            // ========== 第三步：根据区域类型和图片名称获取对应的显示图片 ==========
+            const areaKey = areaType.toString(); // 转换为字符串
+            const displayImage = flowerMapping[areaKey]?.[flowerImage] || 
+                (areaType === 2 ? "hehua-zfz.png" : "meihua-zfz.png");
+            
+            console.log('🖼️ 将要显示的图片:', displayImage, '区域类型:', areaKey);
+            
+            // ========== 第四步：更新页面上的荷花图片 ==========
+            const originalFlowerImg = document.getElementById('hehua-img');
+            if (originalFlowerImg) {
+                originalFlowerImg.src = displayImage;
+                console.log('✅ 已更新荷花图片为:', displayImage);
+            }
+            
+            // ========== 第五步：获取其他元素（原有代码） ==========
+            const nextBtn = document.getElementById('next-img');
+            const toumingImg = document.getElementById('touming-img');
+            const jinglingOverlay = document.getElementById('jingling-overlay');
+            const dankuangOverlay = document.getElementById('dankuang-overlay');
+            const baiseziOverlay = document.getElementById('baisezi-overlay');
+            const nextOverlay = document.getElementById('next-overlay');
+            const textInputContainer = document.getElementById('text-input-container');
+            const textInput = document.getElementById('text-input');
+            
+            // 获取当前页面显示的荷花图片的完整路径
+            let flowerImageSrc = originalFlowerImg.src;
+            
+            // 保存原始的flowerImage信息，用于传递给index9.html
+            const originalFlowerData = {
+                flowerImage: flowerImage, // 原始烫花图片名（如 fhf1.jpg）
+                displayImage: displayImage, // 显示的梅花/荷花图片名
+                areaType: areaType // 区域类型
+            };
+            
+            // ========== 第六步：下一步按钮点击事件 ==========
+            nextBtn.addEventListener('click', function() {
+                // 只显示透明页和输入相关元素
+                toumingImg.style.display = 'block';
+                jinglingOverlay.style.display = 'block';
+                dankuangOverlay.style.display = 'block';
+                baiseziOverlay.style.display = 'block';
+                nextOverlay.style.display = 'block';
+                textInputContainer.style.display = 'block';
+                textInput.focus();
+            });
+            
+            // ========== 第七步：覆盖层下一步按钮点击事件（修改版） ==========
+            nextOverlay.addEventListener('click', function() {
+                const userInputText = textInput.value.trim();
+                
+                if (userInputText) {
+                    // 保存用户输入的文字
+                    localStorage.setItem('userInputText', userInputText);
+                    
+                    // 保存图片的完整信息（不仅仅是src路径）
+                    localStorage.setItem('flowerImageData', JSON.stringify(originalFlowerData));
+                    
+                    // 如果需要，也可以保存完整的图片路径
+                    localStorage.setItem('flowerImageSrc', flowerImageSrc);
+                    
+                    // 保存音乐状态
+                    if (musicIcon) {
+                        audioState.currentTime = audio.currentTime;
+                        audioState.isPlaying = !audio.paused;
+                        audioState.icon = musicIcon.src;
+                        localStorage.setItem('audioState', JSON.stringify(audioState));
+                    }
+                    
+                    console.log('💾 保存数据到localStorage:', {
+                        userInputText: userInputText,
+                        flowerImageData: originalFlowerData,
+                        flowerImageSrc: flowerImageSrc,
+                        audioState: audioState
+                    });
+                    
+                    // 跳转到目标页面
+                    window.location.href = '/绒花1/flower-9/index9.html';
+                } else {
+                    alert('请在文本框中输入一些文字');
+                    textInput.focus();
+                }
+            });
+            
+            // ========== 第八步：辅助函数（原有代码） ==========
+            function hideAllOverlays() {
+                toumingImg.style.display = 'none';
+                jinglingOverlay.style.display = 'none';
+                dankuangOverlay.style.display = 'none';
+                baiseziOverlay.style.display = 'none';
+                nextOverlay.style.display = 'none';
+                textInputContainer.style.display = 'none';
+            }
+            
+            toumingImg.addEventListener('click', function(e) {
+                e.stopPropagation();
+                hideAllOverlays();
+            });
+            
+            dankuangOverlay.addEventListener('click', function() {
+                textInput.focus();
+            });
+            
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    hideAllOverlays();
+                }
+            });
+            
+            // ========== 第九步：页面加载后显示调试信息 ==========
+            console.log('✅ index8.html 初始化完成');
+            console.log('📋 当前图片配置:', originalFlowerData);
+        });
+    </script>
+</body>
+</html>
